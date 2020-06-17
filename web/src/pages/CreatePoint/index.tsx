@@ -4,7 +4,7 @@ import { FiArrowLeft } from 'react-icons/fi'
 import { Map, TileLayer, Marker } from 'react-leaflet'
 import axios from 'axios'
 import api from '../../services/api'
-import { LeafletMouseEvent} from 'leaflet'
+import { LeafletMouseEvent } from 'leaflet'
 
 import './index.css'
 
@@ -26,22 +26,34 @@ interface IBGECityResponse {
 const CreatPoint = () => {
   const [items, setItems] = useState<Item[]>([])
   const [ufs, setUfs] = useState<string[]>([])
+  const [selectedItems, setSelectedItems] = useState<number[]>([])
   const [cities, setCities] = useState<string[]>([])
 
-  const [initialPosition, setInitialPosition] = useState<[number, number]>([0, 0])
+  const [initialPosition, setInitialPosition] = useState<[number, number]>([
+    0,
+    0
+  ])
+
+  const [formData, setFormData] = useState({
+    name:'',
+    email:'',
+    whatsapp:'',
+  })
 
   const [selectedUf, setSelectedUf] = useState('0')
   const [selectedCity, setSelectedCity] = useState('0')
-  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0])
+  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([
+    0,
+    0
+  ])
 
-  useEffect(()=>{
-    navigator.geolocation.getCurrentPosition(position=>{
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(position => {
       const { latitude, longitude } = position.coords
 
       setInitialPosition([latitude, longitude])
     })
-  },[])
-  
+  }, [])
 
   useEffect(() => {
     api.get('items').then(response => {
@@ -84,21 +96,36 @@ const CreatPoint = () => {
 
   function handleSelectCity (event: ChangeEvent<HTMLSelectElement>) {
     const city = event.target.value
-    
+
     setSelectedCity(city)
-    console.log(city)
+    
   }
 
   //pegar a posição do click no mapa
-  function handleMapClick(event: LeafletMouseEvent){
-    console.log(event.latlng)
-    setSelectedPosition([
-      event.latlng.lat,
-      event.latlng.lng,
-    ])
-
+  function handleMapClick (event: LeafletMouseEvent) {
+    
+    setSelectedPosition([event.latlng.lat, event.latlng.lng])
   }
 
+  function handleInputChange (event: ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target;
+    setFormData({ ...formData, [name]:value});
+  }
+
+  function handleSelectItem(id: number){
+
+    const alreadySelected = selectedItems.findIndex(item =>item === id);
+
+    if(alreadySelected>=0){
+      const filteredItems = selectedItems.filter(item=> item !== id);
+      setSelectedItems(filteredItems)
+    }else{
+
+      setSelectedItems([...selectedItems, id])
+    }
+  }
+
+  
   return (
     <div id='page-create-point'>
       <header>
@@ -116,15 +143,35 @@ const CreatPoint = () => {
             <h2>Dados</h2>
           </legend>
 
+          <div className='field'>
+            <label htmlFor='name'>Nome da entidade</label>
+            <input
+              type='text'
+              name='name'
+              id='name'
+              onChange={handleInputChange}
+            />
+          </div>
+
           <div className='field-group'>
             <div className='field'>
               <label htmlFor='email'>E-mail</label>
-              <input type='email' name='email' id='email' />
+              <input
+                type='email'
+                name='email'
+                id='email'
+                onChange={handleInputChange}
+              />
             </div>
 
             <div className='field'>
               <label htmlFor='whatsapp'>Whatsapp</label>
-              <input type='text' name='whatsapp' id='nwhatsapp' />
+              <input
+                type='text'
+                name='whatsapp'
+                id='nwhatsapp'
+                onChange={handleInputChange}
+              />
             </div>
           </div>
         </fieldset>
@@ -187,8 +234,10 @@ const CreatPoint = () => {
 
           <ul className='items-grid'>
             {items.map(item => (
-              <li key={item.id}>
-                <img src={item.image_url} alt='teste' />
+              <li key={item.id} onClick={()=>handleSelectItem(item.id)} 
+              className={selectedItems.includes(item.id) ? 'selected' : ''}
+              >
+                <img src={item.image_url} alt={item.image_url} />
                 <span>{item.title}</span>
               </li>
             ))}
